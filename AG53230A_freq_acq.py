@@ -1,11 +1,4 @@
 #!/usr/bin/env python
-"""
-Created on Mon Aug 19 15:52:23 2013
-53230a_freq_acq.py
-This program is made to communicate with the counter
-Agilent 53230A.
-@author: Serge Grop
-"""
 
 import sys
 import argparse
@@ -15,7 +8,6 @@ import os
 
 DEVICE_IP = '192.168.0.74'
 DEVICE_PORT = 5025 # Agilent have standardized on using port 5025 for SCPI
-#socket services.
 GATE_TIME = 1 # Gate time for one measurement
 OFILENAME = '' #File header
 IN_COUP = 'AC' # Input coupling
@@ -63,22 +55,22 @@ def connect(ip,port):
     """Creation of a socket to establish the communication
     with 53230a counter"""
     try:
-        print '53230a connection state at "%s" ?' % ip
+        print('53230a connection state at "%s" ?'%ip)
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, \
         socket.IPPROTO_TCP)
         sock.settimeout(5) 		# Don't hang around forever
         sock.connect((ip, port)) # Start the connection
-        print '  --> Connected'
+        print('\t--> Connected')
         return sock
     except socket.error as ex: # Debugging
         if 'Connection refused' in ex:
-            print 'Wrong PORT (Default PORT : 5025)\n', ex
-            print '\n  --> Not connected'
+            print('Wrong PORT (Default PORT : %i)\n\t%s'%(DEVICE_PORT, ex))
+            print('\n\t--> Not connected')
         elif 'No route to host' in ex:
-            print 'Wrong address (Default address : 169.254.2.30)\n', ex
-            print '\n  --> Not connected'
+            print('Wrong address (Default address : %s)\n\t%s'%(DEVICE_IP, ex))
+            print('\n\t--> Not connected')
         else:
-            print ex+'\n'+'  --> Not connected'
+            print('%s\n\t--> Not connected'%ex)
         sys.exit()
 
 #==============================================================================
@@ -117,7 +109,7 @@ def check_error(sock):
         error = sock.recv(128)
     except socket.timeout:
         error = ""
-    print error
+    print(error)
 
 #==============================================================================
 def read_buffer(sock):
@@ -138,7 +130,7 @@ def read_buffer(sock):
 def acqu_53230a(i, sock, data_file, gatetime):
     """Frequency acquisition and stockage in a file"""
     sock.send("INIT:IMM\n") # Start the acquisition immediatly
-    print "Waiting for the first acquisition"
+    print("Waiting for the first acquisition")
     while True:
         try:
             sock.send("DATA:POIN?\n") # Ask the number of data in the memory
@@ -159,12 +151,10 @@ def acqu_53230a(i, sock, data_file, gatetime):
                     freq = freq.replace("\t", "")
                     sample = "%f\t%f\t%s\n" % (epoch, mjd, freq)
                     data_file.write(sample) # Write in a file
-                    print sample
+                    print(sample)
                 except Exception as ex:
-                    print "Exception during counter data reading: " + str(ex)
+                    print("Exception during counter data reading: %s"%ex)
             else:
-                #print "Waiting for the next acquisition"
-                #pass
                 time.sleep(int(gatetime)*0.1) # Wait the time of the gate time
                 #to avoid too much check of the memory
         except KeyboardInterrupt:
@@ -193,19 +183,19 @@ def main():
     init_53230a(sock, coup, imp, gate_time, ch)
     acqu_53230a(i, sock, data_file, gate_time)
     sock.close()
-    print '\n  --> Disconnected'
+    print('\n\t--> Disconnected')
     data_file.close()
     try:
         ans = raw_input('Would you like to keep this datafile'\
         '(y/n : default y)?\t')
         if ans == 'n':
             os.remove(filename)
-            print '\n', filename, 'removed\n'
+            print('\n\t%s removed\n'%filename)
         else:
-            print '\n', filename, 'saved\n'
+            print('\n\t%s saved\n'%filename)
     except Exception as ex:
-        print 'Oups '+str(ex)
-    print 'Program ending\n'
+        print('Oups %s'%ex)
+    print('Program ending\n')
 
 #==============================================================================
 if __name__ == "__main__":
